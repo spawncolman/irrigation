@@ -39,3 +39,6 @@
 
 # debug information files
 *.dwo
+.vscode/c_cpp_properties.json
+.vscode/extensions.json
+.gitignore
