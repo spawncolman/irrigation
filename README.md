@@ -171,6 +171,10 @@ Example pin values used in the project (see `src/lcd/seengreat.h`):
 
 Note: Confirm voltage levels: some e-paper displays require 3.3V signals only.
 
+## Wokwi diagram
+
+https://wokwi.com/projects/445077297242143745
+
 ## License
 
 This project is released under the repository `LICENSE` located at the project root.
