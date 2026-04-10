@@ -19,7 +19,17 @@
 
 /* constants */
 static constexpr uint8_t RELAY_CH1_BUTTON_PIN = 36U;
-#define RTC_GPIO_INDEX 18
+static constexpr int RTC_GPIO_INDEX = 18;
+
+/* numeric constants moved out of code to named constants */
+static constexpr uint32_t SERIAL_BAUD_RATE = 115200U;
+static constexpr uint32_t RELAY_TOGGLE_DELAY_MS = 5000U;
+static constexpr uint16_t CRUCETA_LONGPRESS_MS = 2000U;
+static constexpr uint32_t CURRENT_SENSOR_SAMPLE_COUNT = 200U;
+static constexpr uint32_t MAIN_LOOP_SLEEP_US = 100U;
+static constexpr uint32_t ULP_WAKEUP_INTERVAL_US = 300000U; // 300 ms
+static constexpr uint64_t SLEEP_WAKEUP_INTERVAL_US = 60000000ULL; // 60 s
+static constexpr unsigned POST_RESET_CLOSE_DELAY_S = 1U;
 
 /* devices */
 util::boot::Boot boot;
@@ -100,9 +110,9 @@ void checkWakeUpReason(esp_sleep_wakeup_cause_t wakeupReason) {
         }
 
         /* close all valves */
-        relay_espBattery.enable();
-        relay_bridgeBattery.enable();
-        sleep(1);
+    relay_espBattery.enable();
+    relay_bridgeBattery.enable();
+    sleep(POST_RESET_CLOSE_DELAY_S);
         relay_bridge.enable();
         for (uint8_t valveId = 0; valveId < NUM_VALVES; ++valveId) {
             util::valve::Valve *valve = &valves[valveId];
@@ -163,7 +173,7 @@ void setup() {
     /* start timestamp */
     startTimestampUs = micros();
     /* debugging */
-    Serial.begin(115200);
+    Serial.begin(SERIAL_BAUD_RATE);
     /* boot setup */
     boot.setup();
     /* clock setup */
@@ -219,15 +229,15 @@ void loop() {
 #ifdef RELAY
     digitalWrite(RELAY_CH1_BUTTON_PIN, HIGH);
     Serial.println("HIGH");
-    delay(5000U);
+    delay(RELAY_TOGGLE_DELAY_MS);
     digitalWrite(RELAY_CH1_BUTTON_PIN, LOW);
     Serial.println("LOW");
-    delay(5000U);
+    delay(RELAY_TOGGLE_DELAY_MS);
 #endif
 
 #ifdef SENSOR_CORRIENTE
     // read current sensor
-    Serial.printf("Intensidad %f A\n", currentSensonr.measure(200));
+    Serial.printf("Intensidad %f A\n", currentSensonr.measure(CURRENT_SENSOR_SAMPLE_COUNT));
 
 #endif
 
@@ -236,7 +246,7 @@ void loop() {
     Serial.printf("cruceta button 0x%x\n", button);
     if ((button & UP_BUTTON) > 0) {
         Serial.printf("cruceta pressed result 0x%d\n",
-                      cruceta.checkPressedButton(UP_BUTTON, 2000U));
+                      cruceta.checkPressedButton(UP_BUTTON, CRUCETA_LONGPRESS_MS));
     }
 #endif
 
@@ -265,7 +275,7 @@ void loop() {
 
     cruceta.events();
 
-    usleep(100U);
+    usleep(MAIN_LOOP_SLEEP_US);
 #endif
 }
 
@@ -292,7 +302,7 @@ void deepSleep() {
 
     /* TODO: ULP programming */
     // Execute ULP program at 300ms intervals
-    programULP(300000);
+    programULP(ULP_WAKEUP_INTERVAL_US);
 
     // esp_sleep_enable_ulp_wakeup();
 
@@ -306,6 +316,6 @@ void deepSleep() {
           elapsed % 1000);
 #endif
     uint64_t elapsed = micros() - startTimestampUs;
-    esp_sleep_enable_timer_wakeup(60000000U - elapsed);
+    esp_sleep_enable_timer_wakeup(SLEEP_WAKEUP_INTERVAL_US - elapsed);
     esp_deep_sleep_start();
 }
